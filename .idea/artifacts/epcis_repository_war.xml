@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="war" name="epcis-repository:war">
+    <output-path>$PROJECT_DIR$/epcis-repository/target</output-path>
+    <root id="archive" name="epcis-repository-0.5.1-SNAPSHOT.war">
+      <element id="artifact" artifact-name="epcis-repository:war exploded" />
+    </root>
+  </artifact>
+</component>
