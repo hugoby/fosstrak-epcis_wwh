@@ -9,5 +9,6 @@
     <file url="file://$PROJECT_DIR$/epcis-interop-test" charset="ISO-8859-1" />
     <file url="file://$PROJECT_DIR$/epcis-queryclient" charset="ISO-8859-1" />
     <file url="file://$PROJECT_DIR$/epcis-repository" charset="ISO-8859-1" />
+    <file url="file://$PROJECT_DIR$/epcis-repository/src/main/java/org/fosstrak/epcis/repository/capture/MultipartFormDataFilter.java" charset="UTF-8" />
   </component>
 </project>
