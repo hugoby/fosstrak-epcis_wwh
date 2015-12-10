@@ -91,10 +91,10 @@ public class CaptureClient implements X509TrustManager, HostnameVerifier {
      * @param url
      *            The URL to the EPCIS Capture Interface.
      */
+
     public CaptureClient(String url) {
         this(url, null);
     }
-
     /**
      * Constructs a new CaptureClient using the given URL and authentication
      * options. The following authentication options are supported:
@@ -137,7 +137,6 @@ public class CaptureClient implements X509TrustManager, HostnameVerifier {
         }
         this.authOptions = authOptions;
     }
-
     /**
      * @return The capture client properties.
      */
@@ -156,7 +155,6 @@ public class CaptureClient implements X509TrustManager, HostnameVerifier {
         }
         return props;
     }
-
     /**
      * Sends the XML available from the given InputStream to the EPCIS capture
      * interface. Please see the <a
@@ -236,7 +234,6 @@ public class CaptureClient implements X509TrustManager, HostnameVerifier {
      * Fosstrak EPCIS capture interface. It deletes all event data in the EPCIS
      * database. This operation is only allowed if the corresponding property is
      * set in the repository's configuration.
-     * 
      * @return The response from the capture module.
      * @throws CaptureClientException
      *             If a communication error occurred.
@@ -249,11 +246,9 @@ public class CaptureClient implements X509TrustManager, HostnameVerifier {
             throw new CaptureClientException("error communicating with EPCIS cpature interface: " + e.getMessage(), e);
         }
     }
-
     private boolean isEmpty(String s) {
         return s == null || "".equals(s);
     }
-
     /**
      * Opens a connection to the EPCIS capture interface.
      * 
@@ -261,6 +256,7 @@ public class CaptureClient implements X509TrustManager, HostnameVerifier {
      *            The HTTP content-type, e.g., <code>text/xml</code>
      * @return The HTTP connection object.
      */
+    /*wwh-HttpConnection????????????*/
     private HttpURLConnection getConnection(final String contentType) throws CaptureClientException, IOException {
         URL serviceUrl;
         try {
@@ -326,7 +322,7 @@ public class CaptureClient implements X509TrustManager, HostnameVerifier {
         } else {
             Authenticator.setDefault(null);
         }
-
+    /*wwh-??Url?????*/
         connection = (HttpURLConnection) serviceUrl.openConnection();
         if (sslContext != null && connection instanceof HttpsURLConnection) {
             HttpsURLConnection httpsConnection = (HttpsURLConnection) connection;
@@ -423,6 +419,7 @@ public class CaptureClient implements X509TrustManager, HostnameVerifier {
         return true;
     }
 
+    /*X509Certificate???????????? */
     private SSLContext getSSLContext(KeyStore keyStore, char[] password) throws Exception {
         KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance("SunX509");
         keyManagerFactory.init(keyStore, password);

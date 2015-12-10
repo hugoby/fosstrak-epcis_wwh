@@ -3,6 +3,8 @@
   <component name="Encoding">
     <file url="file://$PROJECT_DIR$" charset="ISO-8859-1" />
     <file url="file://$PROJECT_DIR$/epcis-captureclient" charset="ISO-8859-1" />
+    <file url="file://$PROJECT_DIR$/epcis-captureclient/src/main/java/org/fosstrak/epcis/captureclient/CaptureClientGui.java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/epcis-captureclient/src/main/java/org/fosstrak/epcis/captureclient/En_Decryption.java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/epcis-commons" charset="ISO-8859-1" />
     <file url="file://$PROJECT_DIR$/epcis-interop-test" charset="ISO-8859-1" />
     <file url="file://$PROJECT_DIR$/epcis-queryclient" charset="ISO-8859-1" />
