@@ -19,6 +19,7 @@
  */
 
 package org.fosstrak.epcis.captureclient;
+import org.fosstrak.epcis.ency.En_Decryption;
 import org.fosstrak.epcis.captureclient.CaptureClientHelper.EpcisEventType;
 import org.fosstrak.epcis.captureclient.CaptureClientHelper.ExampleEvents;
 import org.fosstrak.epcis.captureclient.CaptureEvent.BizTransaction;
@@ -227,7 +228,7 @@ public class CaptureClientGui extends WindowAdapter implements ActionListener, A
 			}
 			
 			public boolean isComplete() {
-                //拿到url的地址
+                //拿到url的地�?
 				String url = mwServiceUrlTextField.getText();
 				return url != null && url.length() > 0;
 			}
@@ -699,7 +700,6 @@ public class CaptureClientGui extends WindowAdapter implements ActionListener, A
             }
 
             // recordTime is set by the capture-Interface
-
             int index = mwEventTypeChooserComboBox.getSelectedIndex();
             if (EpcisEventType.fromGuiIndex(index) == EpcisEventType.ObjectEvent) {
                 if (!CaptureClientHelper.addEpcList(document, root, mwEpcListTextField.getText())) {
@@ -707,31 +707,38 @@ public class CaptureClientGui extends WindowAdapter implements ActionListener, A
                             JOptionPane.ERROR_MESSAGE);
                     return;
                 }
+                /**Hugo read point encrypted 20151203 begin**/
+                String tmp_action=(String) mwActionComboBox.getSelectedItem();
+                String tmp_bizStep=mwBizStepTextField.getText();
+                String tmp_disposition=mwDispositionTextField.getText();
+                String tmp_readPoint = mwReadPointTextField.getText();
+                String tmp_bizLocation=mwBizLocationTextField.getText();
+                Map<String, String> tmp_bizTrancation=fromGui(mwBizTransIDFields, mwBizTransTypeFields);
+
+                En_Decryption.setECCKey();
+                System.out.println("readPoint before encrypted----" + tmp_readPoint);
+                long startTime=System.nanoTime();
+               // BASE64Decoder decoder2 = new BASE64Decoder();
+               // byte[] tmp_readPoint2 = decoder2.decodeBuffer(tmp_readPoint);
+                String encry_readPoint = En_Decryption.encryption(tmp_readPoint.getBytes());
+                long endTime=System.nanoTime();
+                System.out.println("readPoint after encrypted ---" + encry_readPoint+"\n");
+
+                System.out.println("readPoint decryption begin---");
+                String decryption_readPoint=En_Decryption.decryption(encry_readPoint);
+                System.out.println("decryption readPoint---"+decryption_readPoint);
+                System.out.println("readPoint decryption end---");
+                System.out.println("spend time: "+(endTime-startTime));
+                /**Hugo read point encrypted 20151203 end**/
+
                 CaptureClientHelper.addAction(document, root, (String) mwActionComboBox.getSelectedItem());
                 CaptureClientHelper.addBizStep(document, root, mwBizStepTextField.getText());
                 CaptureClientHelper.addDisposition(document, root, mwDispositionTextField.getText());
-
-                /**Hugo read point encrypted 20151203 begin**/
-                String tmp_readPoint = mwReadPointTextField.getText();
-
-                En_Decryption.setECCKey();
-
-                System.out.println("before encrypted ==" + tmp_readPoint);
-
-                long startTime=System.nanoTime();
-                BASE64Decoder decoder2 = new BASE64Decoder();
-                byte[] tmp_readPoint2 = decoder2.decodeBuffer(tmp_readPoint);
-
-                tmp_readPoint = En_Decryption.encryption(tmp_readPoint2);
-                long endTime=System.nanoTime();
-                System.out.println("after encrypted ==" + tmp_readPoint);
-                System.out.println("spend time: "+(endTime-startTime));
-
-                /**Hugo read point encrypted 20151203 end**/
-
-                CaptureClientHelper.addReadPoint(document, root, mwReadPointTextField.getText());
+                //CaptureClientHelper.addReadPoint(document, root, mwReadPointTextField.getText());
+                CaptureClientHelper.addReadPoint(document, root, encry_readPoint);
                 CaptureClientHelper.addBizLocation(document, root, mwBizLocationTextField.getText());
                 CaptureClientHelper.addBizTransactions(document, root, fromGui(mwBizTransIDFields, mwBizTransTypeFields));
+
             } else if (EpcisEventType.fromGuiIndex(index) == EpcisEventType.AggregationEvent) {
                 if (!CaptureClientHelper.addParentId(document, root, mwParentIDTextField.getText()) && !mwActionComboBox.getSelectedItem().equals("OBSERVE")) {
                     JOptionPane.showMessageDialog(frame, "Because action is OBSERVE, it's required to "
@@ -772,6 +779,7 @@ public class CaptureClientGui extends WindowAdapter implements ActionListener, A
                             JOptionPane.ERROR_MESSAGE);
                     return;
                 }
+
                 if (!CaptureClientHelper.addQuantity(document, root, mwQuantityTextField.getText())) {
                     JOptionPane.showMessageDialog(frame, "Please specify a quantity value (integer number)", "Error",
                             JOptionPane.ERROR_MESSAGE);
@@ -828,31 +836,29 @@ public class CaptureClientGui extends WindowAdapter implements ActionListener, A
                 System.out.println("spend time: "+(endTime-startTime));
 
                 /**Hugo read point encrypted 20151203 end**/
-
                 CaptureClientHelper.addReadPoint(document, root, mwReadPointTextField.getText());
                 CaptureClientHelper.addBizLocation(document, root, mwBizLocationTextField.getText());
             }
 
             DOMSource domsrc = new DOMSource(document);
-
             StringWriter out = new StringWriter();
             StreamResult streamResult = new StreamResult(out);
             TransformerFactory tf = TransformerFactory.newInstance();
             Transformer serializer = tf.newTransformer();
 
             serializer.setOutputProperty(OutputKeys.INDENT, "yes");
+            /*<p>Transform the XML <code>Source</code> to a <code>Result</code>.*/
             serializer.transform(domsrc, streamResult);
-
             String eventXml = out.toString();
             String postData = eventXml;
-
+            System.out.println("Print eventData-------\n");
+            System.out.println(postData);
             dwOutputTextArea.append("sending HTTP POST data:\n");
             dwOutputTextArea.append(postData);
 
             /* connect the service, write out xml and get response */
-            /*  wwh开始生成事件，将事件进行传送到知识库*/
+            /* �?始生成事件，将事件进行传送到知识�?  wwh*/
             int response = client.capture(postData);
-
             if (response == 200) {
                 JOptionPane.showMessageDialog(frame, "Capture request succeeded.", "Success",
                         JOptionPane.INFORMATION_MESSAGE);
@@ -894,7 +900,6 @@ public class CaptureClientGui extends WindowAdapter implements ActionListener, A
         }
         return bizTransMap;
     }
-
 
     /**
      * Event handler for window manager closing events. Overrides the default,
@@ -946,7 +951,6 @@ public class CaptureClientGui extends WindowAdapter implements ActionListener, A
         mwBizTransTypeFields.remove(toRemove);
         mwBizTransIDFields.remove(toRemove);
         mwBizTransButtons.remove(toRemove);
-
         drawBizTransaction();
     }
 

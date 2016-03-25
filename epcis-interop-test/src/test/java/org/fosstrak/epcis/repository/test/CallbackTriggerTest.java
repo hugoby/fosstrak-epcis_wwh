@@ -25,7 +25,6 @@ import java.io.InputStream;
 
 import junit.framework.TestCase;
 
-import org.fosstrak.epcis.captureclient.CaptureClient;
 import org.fosstrak.epcis.queryclient.QueryControlClient;
 import org.fosstrak.epcis.soap.NoSuchSubscriptionExceptionResponse;
 import org.fosstrak.epcis.utils.QueryCallbackListener;
