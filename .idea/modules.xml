@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/epcis-captureclient/epcis-captureclient.iml" filepath="$PROJECT_DIR$/epcis-captureclient/epcis-captureclient.iml" />
+      <module fileurl="file://$PROJECT_DIR$/epcis-commons/epcis-commons.iml" filepath="$PROJECT_DIR$/epcis-commons/epcis-commons.iml" />
+      <module fileurl="file://$PROJECT_DIR$/epcis-interop-test/epcis-interop-test.iml" filepath="$PROJECT_DIR$/epcis-interop-test/epcis-interop-test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/epcis-queryclient/epcis-queryclient.iml" filepath="$PROJECT_DIR$/epcis-queryclient/epcis-queryclient.iml" />
+      <module fileurl="file://$PROJECT_DIR$/epcis-repository/epcis-repository.iml" filepath="$PROJECT_DIR$/epcis-repository/epcis-repository.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/fosstrak-epcis.iml" filepath="$PROJECT_DIR$/.idea/fosstrak-epcis.iml" />
+    </modules>
+  </component>
+</project>

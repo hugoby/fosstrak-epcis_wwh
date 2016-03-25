@@ -22,7 +22,6 @@ package org.fosstrak.epcis.repository.test;
 
 import org.dbunit.dataset.ITable;
 import org.dbunit.operation.DatabaseOperation;
-import org.fosstrak.epcis.captureclient.CaptureClient;
 import org.fosstrak.epcis.utils.FosstrakDatabaseHelper;
 
 /**

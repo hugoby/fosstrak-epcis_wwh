@@ -1288,6 +1288,10 @@ public class CaptureOperationsModule {
      * @param textContent
      * @throws InvalidFormatException
      */
+
+
+
+
     protected void checkEpc(String textContent) throws InvalidFormatException {
         String uri = textContent;
         if (!uri.startsWith("urn:epc:id:")) {

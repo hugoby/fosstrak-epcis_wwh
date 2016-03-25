@@ -62,12 +62,9 @@ public class CaptureOperationsServlet extends HttpServlet {
     private static final String PROP_DB_RESET_SCRIPT = "dbResetScript";
     private static final String PROP_EPCIS_SCHEMA_FILE = "epcisSchemaFile";
     private static final String PROP_EPCIS_MASTER_DATA_SCHEMA_FILE = "epcisMasterDataSchemaFile";
-
     private static final String PAGE_CAPTURE_INTERFACE = "/WEB-INF/jsp/capture.jsp";
     private static final String PAGE_CAPTURE_FORM = "/WEB-INF/jsp/captureForm.jsp";
-
     private static final Log LOG = LogFactory.getLog(CaptureOperationsServlet.class);
-
     private CaptureOperationsModule captureOperationsModule;
 
     /**

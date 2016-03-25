@@ -19,39 +19,22 @@
  */
 
 package org.fosstrak.epcis.captureclient;
+import org.fosstrak.epcis.ency.En_Decryption;
+import org.fosstrak.epcis.captureclient.CaptureClientHelper.EpcisEventType;
+import org.fosstrak.epcis.captureclient.CaptureClientHelper.ExampleEvents;
+import org.fosstrak.epcis.captureclient.CaptureEvent.BizTransaction;
+import org.fosstrak.epcis.gui.AuthenticationOptionsChangeEvent;
+import org.fosstrak.epcis.gui.AuthenticationOptionsChangeListener;
+import org.fosstrak.epcis.gui.AuthenticationOptionsPanel;
+import org.w3c.dom.DOMImplementation;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import sun.misc.BASE64Decoder;
 
-import java.awt.BorderLayout;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
-import javax.swing.ListSelectionModel;
-import javax.swing.UIManager;
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.xml.parsers.DocumentBuilder;
@@ -63,16 +46,22 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-
-import org.fosstrak.epcis.captureclient.CaptureClientHelper.EpcisEventType;
-import org.fosstrak.epcis.captureclient.CaptureClientHelper.ExampleEvents;
-import org.fosstrak.epcis.captureclient.CaptureEvent.BizTransaction;
-import org.fosstrak.epcis.gui.AuthenticationOptionsChangeEvent;
-import org.fosstrak.epcis.gui.AuthenticationOptionsChangeListener;
-import org.fosstrak.epcis.gui.AuthenticationOptionsPanel;
-import org.w3c.dom.DOMImplementation;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.spec.InvalidKeySpecException;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * GUI class for the EPCIS Capture Interface Client. Implements the GUI and the
@@ -81,13 +70,11 @@ import org.w3c.dom.Element;
  * @author David Gubler
  */
 public class CaptureClientGui extends WindowAdapter implements ActionListener, AuthenticationOptionsChangeListener {
-
     /**
      * The client through which the EPCISEvents will be sent to the repository's
      * Capture Operations Module.
      */
     private CaptureClient client;
-
     /*
      * These lists hold the input fields for the BizTransactions. The lists are
      * modified by the user to allow for as many arguments as the user wants.
@@ -138,44 +125,34 @@ public class CaptureClientGui extends WindowAdapter implements ActionListener, A
     private JTextField mwBizLocationTextField;
     private JLabel mwBizTransactionLabel;
     private JTextField mwBizTransactionTextField;
-
     /* associated EPCs for object events */
     private JLabel mwEpcListLabel;
     private JTextField mwEpcListTextField;
-
     /* parent EPC field for aggregation events */
     private JLabel mwParentIDLabel;
     private JTextField mwParentIDTextField;
-
     /* associated EPCs for aggregation events */
     private JLabel mwChildEPCsLabel;
     private JTextField mwChildEPCsTextField;
-
     /* EPC class for quantity events */
     private JLabel mwEpcClassLabel;
     private JTextField mwEpcClassTextField;
-
     /* quantity for quantity events */
     private JLabel mwQuantityLabel;
     private JTextField mwQuantityTextField;
-
     /* buttons */
     private JButton mwFillInExampleButton;
     private JButton mwGenerateEventButton;
-
     /** example selection window. */
     private JFrame exampleWindow;
-
     private JPanel ewMainPanel;
     private JPanel ewListPanel;
     private JPanel ewButtonPanel;
     private JList<String> ewExampleList;
     private JScrollPane ewExampleScrollPane;
     private JButton ewOkButton;
-
     /* debug window */
     private JFrame debugWindow;
-
     private JTextArea dwOutputTextArea;
     private JScrollPane dwOutputScrollPane;
     private JPanel dwButtonPanel;
@@ -187,7 +164,6 @@ public class CaptureClientGui extends WindowAdapter implements ActionListener, A
     public CaptureClientGui() {
         this(null);
     }
-
     /**
      * Constructs a new CaptureClientGui initialized with the given address.
      * 
@@ -252,6 +228,7 @@ public class CaptureClientGui extends WindowAdapter implements ActionListener, A
 			}
 			
 			public boolean isComplete() {
+                //拿到url的地�?
 				String url = mwServiceUrlTextField.getText();
 				return url != null && url.length() > 0;
 			}
@@ -550,7 +527,25 @@ public class CaptureClientGui extends WindowAdapter implements ActionListener, A
             return;
         }
         if (e.getSource() == mwGenerateEventButton) {
-            mwGenerateEventButtonPressed();
+            try {
+                mwGenerateEventButtonPressed();
+            } catch (NoSuchProviderException e1) {
+                e1.printStackTrace();
+            } catch (NoSuchAlgorithmException e1) {
+                e1.printStackTrace();
+            } catch (IOException e1) {
+                e1.printStackTrace();
+            } catch (IllegalBlockSizeException e1) {
+                e1.printStackTrace();
+            } catch (InvalidKeyException e1) {
+                e1.printStackTrace();
+            } catch (BadPaddingException e1) {
+                e1.printStackTrace();
+            } catch (InvalidKeySpecException e1) {
+                e1.printStackTrace();
+            } catch (NoSuchPaddingException e1) {
+                e1.printStackTrace();
+            }
             return;
         }
         if (e.getSource() == mwFillInExampleButton) {
@@ -650,12 +645,14 @@ public class CaptureClientGui extends WindowAdapter implements ActionListener, A
     }
 
     /**
+     * Hugo 20151203 [target]
      * The user pushed the Generate event-button. This method converts the data
      * from the user interface to XML, POSTs it to the server and displays the
      * answer to the user. It also does some simple client-side checks to see if
      * all necessary fields are filled.
      */
-    private void mwGenerateEventButtonPressed() {
+
+    private void mwGenerateEventButtonPressed() throws NoSuchProviderException, NoSuchAlgorithmException, IOException, IllegalBlockSizeException, InvalidKeyException, BadPaddingException, InvalidKeySpecException, NoSuchPaddingException {
         dwOutputTextArea.setText("");
         /* used later for user interaction */
         JFrame frame = new JFrame();
@@ -703,7 +700,6 @@ public class CaptureClientGui extends WindowAdapter implements ActionListener, A
             }
 
             // recordTime is set by the capture-Interface
-
             int index = mwEventTypeChooserComboBox.getSelectedIndex();
             if (EpcisEventType.fromGuiIndex(index) == EpcisEventType.ObjectEvent) {
                 if (!CaptureClientHelper.addEpcList(document, root, mwEpcListTextField.getText())) {
@@ -711,12 +707,38 @@ public class CaptureClientGui extends WindowAdapter implements ActionListener, A
                             JOptionPane.ERROR_MESSAGE);
                     return;
                 }
+                /**Hugo read point encrypted 20151203 begin**/
+                String tmp_action=(String) mwActionComboBox.getSelectedItem();
+                String tmp_bizStep=mwBizStepTextField.getText();
+                String tmp_disposition=mwDispositionTextField.getText();
+                String tmp_readPoint = mwReadPointTextField.getText();
+                String tmp_bizLocation=mwBizLocationTextField.getText();
+                Map<String, String> tmp_bizTrancation=fromGui(mwBizTransIDFields, mwBizTransTypeFields);
+
+                En_Decryption.setECCKey();
+                System.out.println("readPoint before encrypted----" + tmp_readPoint);
+                long startTime=System.nanoTime();
+               // BASE64Decoder decoder2 = new BASE64Decoder();
+               // byte[] tmp_readPoint2 = decoder2.decodeBuffer(tmp_readPoint);
+                String encry_readPoint = En_Decryption.encryption(tmp_readPoint.getBytes());
+                long endTime=System.nanoTime();
+                System.out.println("readPoint after encrypted ---" + encry_readPoint+"\n");
+
+                System.out.println("readPoint decryption begin---");
+                String decryption_readPoint=En_Decryption.decryption(encry_readPoint);
+                System.out.println("decryption readPoint---"+decryption_readPoint);
+                System.out.println("readPoint decryption end---");
+                System.out.println("spend time: "+(endTime-startTime));
+                /**Hugo read point encrypted 20151203 end**/
+
                 CaptureClientHelper.addAction(document, root, (String) mwActionComboBox.getSelectedItem());
                 CaptureClientHelper.addBizStep(document, root, mwBizStepTextField.getText());
                 CaptureClientHelper.addDisposition(document, root, mwDispositionTextField.getText());
-                CaptureClientHelper.addReadPoint(document, root, mwReadPointTextField.getText());
+                //CaptureClientHelper.addReadPoint(document, root, mwReadPointTextField.getText());
+                CaptureClientHelper.addReadPoint(document, root, encry_readPoint);
                 CaptureClientHelper.addBizLocation(document, root, mwBizLocationTextField.getText());
                 CaptureClientHelper.addBizTransactions(document, root, fromGui(mwBizTransIDFields, mwBizTransTypeFields));
+
             } else if (EpcisEventType.fromGuiIndex(index) == EpcisEventType.AggregationEvent) {
                 if (!CaptureClientHelper.addParentId(document, root, mwParentIDTextField.getText()) && !mwActionComboBox.getSelectedItem().equals("OBSERVE")) {
                     JOptionPane.showMessageDialog(frame, "Because action is OBSERVE, it's required to "
@@ -731,6 +753,23 @@ public class CaptureClientGui extends WindowAdapter implements ActionListener, A
                 CaptureClientHelper.addAction(document, root, (String) mwActionComboBox.getSelectedItem());
                 CaptureClientHelper.addBizStep(document, root, mwBizStepTextField.getText());
                 CaptureClientHelper.addDisposition(document, root, mwDispositionTextField.getText());
+
+                /**Hugo read point encrypted 20151203 begin**/
+                String tmp_readPoint = mwReadPointTextField.getText();
+                System.out.println("before encrypted ==" + tmp_readPoint);
+
+                long startTime=System.nanoTime();
+                BASE64Decoder decoder2 = new BASE64Decoder();
+                byte[] tmp_readPoint2 = decoder2.decodeBuffer(tmp_readPoint);
+
+                tmp_readPoint = En_Decryption.encryption(tmp_readPoint2);
+                long endTime=System.nanoTime();
+                System.out.println("after encrypted ==" + tmp_readPoint);
+                System.out.println("spend time: "+(endTime-startTime));
+
+                /**Hugo read point encrypted 20151203 end**/
+
+
                 CaptureClientHelper.addReadPoint(document, root, mwReadPointTextField.getText());
                 CaptureClientHelper.addBizLocation(document, root, mwBizLocationTextField.getText());
                 CaptureClientHelper.addBizTransactions(document, root, fromGui(mwBizTransIDFields, mwBizTransTypeFields));
@@ -740,6 +779,7 @@ public class CaptureClientGui extends WindowAdapter implements ActionListener, A
                             JOptionPane.ERROR_MESSAGE);
                     return;
                 }
+
                 if (!CaptureClientHelper.addQuantity(document, root, mwQuantityTextField.getText())) {
                     JOptionPane.showMessageDialog(frame, "Please specify a quantity value (integer number)", "Error",
                             JOptionPane.ERROR_MESSAGE);
@@ -747,6 +787,22 @@ public class CaptureClientGui extends WindowAdapter implements ActionListener, A
                 }
                 CaptureClientHelper.addBizStep(document, root, mwBizStepTextField.getText());
                 CaptureClientHelper.addDisposition(document, root, mwDispositionTextField.getText());
+
+                /**Hugo read point encrypted 20151203 begin**/
+                String tmp_readPoint = mwReadPointTextField.getText();
+                System.out.println("before encrypted ==" + tmp_readPoint);
+
+                long startTime=System.nanoTime();
+                BASE64Decoder decoder2 = new BASE64Decoder();
+                byte[] tmp_readPoint2 = decoder2.decodeBuffer(tmp_readPoint);
+
+                tmp_readPoint = En_Decryption.encryption(tmp_readPoint2);
+                long endTime=System.nanoTime();
+                System.out.println("after encrypted ==" + tmp_readPoint);
+                System.out.println("spend time: "+(endTime-startTime));
+
+                /**Hugo read point encrypted 20151203 end**/
+
                 CaptureClientHelper.addReadPoint(document, root, mwReadPointTextField.getText());
                 CaptureClientHelper.addBizLocation(document, root, mwBizLocationTextField.getText());
                 CaptureClientHelper.addBizTransactions(document, root, fromGui(mwBizTransIDFields, mwBizTransTypeFields));
@@ -765,29 +821,44 @@ public class CaptureClientGui extends WindowAdapter implements ActionListener, A
                 CaptureClientHelper.addAction(document, root, (String) mwActionComboBox.getSelectedItem());
                 CaptureClientHelper.addBizStep(document, root, mwBizStepTextField.getText());
                 CaptureClientHelper.addDisposition(document, root, mwDispositionTextField.getText());
+
+                /**Hugo read point encrypted 20151203 begin**/
+                String tmp_readPoint = mwReadPointTextField.getText();
+                System.out.println("before encrypted ==" + tmp_readPoint);
+
+                long startTime=System.nanoTime();
+                BASE64Decoder decoder2 = new BASE64Decoder();
+                byte[] tmp_readPoint2 = decoder2.decodeBuffer(tmp_readPoint);
+
+                tmp_readPoint = En_Decryption.encryption(tmp_readPoint2);
+                long endTime=System.nanoTime();
+                System.out.println("after encrypted ==" + tmp_readPoint);
+                System.out.println("spend time: "+(endTime-startTime));
+
+                /**Hugo read point encrypted 20151203 end**/
                 CaptureClientHelper.addReadPoint(document, root, mwReadPointTextField.getText());
                 CaptureClientHelper.addBizLocation(document, root, mwBizLocationTextField.getText());
             }
 
             DOMSource domsrc = new DOMSource(document);
-
             StringWriter out = new StringWriter();
             StreamResult streamResult = new StreamResult(out);
             TransformerFactory tf = TransformerFactory.newInstance();
             Transformer serializer = tf.newTransformer();
 
             serializer.setOutputProperty(OutputKeys.INDENT, "yes");
+            /*<p>Transform the XML <code>Source</code> to a <code>Result</code>.*/
             serializer.transform(domsrc, streamResult);
-
             String eventXml = out.toString();
             String postData = eventXml;
-
+            System.out.println("Print eventData-------\n");
+            System.out.println(postData);
             dwOutputTextArea.append("sending HTTP POST data:\n");
             dwOutputTextArea.append(postData);
 
             /* connect the service, write out xml and get response */
+            /* �?始生成事件，将事件进行传送到知识�?  wwh*/
             int response = client.capture(postData);
-
             if (response == 200) {
                 JOptionPane.showMessageDialog(frame, "Capture request succeeded.", "Success",
                         JOptionPane.INFORMATION_MESSAGE);
@@ -836,7 +907,7 @@ public class CaptureClientGui extends WindowAdapter implements ActionListener, A
      * 
      * @param e
      *            The WindowEvent.
-     * @see java.awt.event.WindowAdapter#windowClosing(java.awt.event.WindowEvent)
+     * @see WindowAdapter#windowClosing(WindowEvent)
      */
     public void windowClosing(final WindowEvent e) {
         if (e.getSource() == debugWindow) {
@@ -867,6 +938,7 @@ public class CaptureClientGui extends WindowAdapter implements ActionListener, A
         drawBizTransaction();
     }
 
+
     /**
      * Removes a row from the Business Transactions.
      * 
@@ -879,7 +951,6 @@ public class CaptureClientGui extends WindowAdapter implements ActionListener, A
         mwBizTransTypeFields.remove(toRemove);
         mwBizTransIDFields.remove(toRemove);
         mwBizTransButtons.remove(toRemove);
-
         drawBizTransaction();
     }
 
@@ -970,6 +1041,7 @@ public class CaptureClientGui extends WindowAdapter implements ActionListener, A
         } else {
             new CaptureClientGui();
         }
+
     }
 
 	public void configurationChanged(AuthenticationOptionsChangeEvent ace) {
@@ -979,5 +1051,5 @@ public class CaptureClientGui extends WindowAdapter implements ActionListener, A
         } else {
         	mwGenerateEventButton.setEnabled(false);
         }
-	}
+    }
 }
