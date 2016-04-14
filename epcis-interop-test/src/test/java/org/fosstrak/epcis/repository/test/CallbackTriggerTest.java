@@ -20,14 +20,14 @@
 
 package org.fosstrak.epcis.repository.test;
 
-import java.io.FileInputStream;
-import java.io.InputStream;
-
 import junit.framework.TestCase;
-
+import org.fosstrak.epcis.captureclient.CaptureClient;
 import org.fosstrak.epcis.queryclient.QueryControlClient;
 import org.fosstrak.epcis.soap.NoSuchSubscriptionExceptionResponse;
 import org.fosstrak.epcis.utils.QueryCallbackListener;
+
+import java.io.FileInputStream;
+import java.io.InputStream;
 
 public class CallbackTriggerTest extends TestCase {
     private static final String PATH = "src/test/resources/queries/webservice/";

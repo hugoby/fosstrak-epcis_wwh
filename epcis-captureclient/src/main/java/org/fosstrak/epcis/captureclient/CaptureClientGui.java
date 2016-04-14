@@ -19,17 +19,19 @@
  */
 
 package org.fosstrak.epcis.captureclient;
-import org.fosstrak.epcis.ency.En_Decryption;
+
+import org.bouncycastle.util.encoders.Base64;
 import org.fosstrak.epcis.captureclient.CaptureClientHelper.EpcisEventType;
 import org.fosstrak.epcis.captureclient.CaptureClientHelper.ExampleEvents;
 import org.fosstrak.epcis.captureclient.CaptureEvent.BizTransaction;
+import org.fosstrak.epcis.ency.En_Decryption;
 import org.fosstrak.epcis.gui.AuthenticationOptionsChangeEvent;
 import org.fosstrak.epcis.gui.AuthenticationOptionsChangeListener;
 import org.fosstrak.epcis.gui.AuthenticationOptionsPanel;
 import org.w3c.dom.DOMImplementation;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import sun.misc.BASE64Decoder;
+import org.xml.sax.SAXException;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -57,6 +59,7 @@ import java.io.StringWriter;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -528,7 +531,13 @@ public class CaptureClientGui extends WindowAdapter implements ActionListener, A
         }
         if (e.getSource() == mwGenerateEventButton) {
             try {
-                mwGenerateEventButtonPressed();
+                try {
+                    mwGenerateEventButtonPressed();
+                } catch (SAXException e1) {
+                    e1.printStackTrace();
+                } catch (SignatureException e1) {
+                    e1.printStackTrace();
+                }
             } catch (NoSuchProviderException e1) {
                 e1.printStackTrace();
             } catch (NoSuchAlgorithmException e1) {
@@ -652,12 +661,28 @@ public class CaptureClientGui extends WindowAdapter implements ActionListener, A
      * all necessary fields are filled.
      */
 
-    private void mwGenerateEventButtonPressed() throws NoSuchProviderException, NoSuchAlgorithmException, IOException, IllegalBlockSizeException, InvalidKeyException, BadPaddingException, InvalidKeySpecException, NoSuchPaddingException {
+    private void mwGenerateEventButtonPressed() throws NoSuchProviderException, NoSuchAlgorithmException, IOException, IllegalBlockSizeException, InvalidKeyException, BadPaddingException, InvalidKeySpecException, NoSuchPaddingException, SAXException, SignatureException {
         dwOutputTextArea.setText("");
         /* used later for user interaction */
         JFrame frame = new JFrame();
 
         try {
+            //Hugo 20160405 DES_En_decyption begin
+            String user="hugo";
+            String admin="admin";
+            En_Decryption.keyStore_List(admin, user, En_Decryption.En_DecryMethod.PUB_ENCRY);
+            byte[] DES_Key=En_Decryption.getDESKey();
+            System.out.println("DES_Key:      "+ Base64.toBase64String(DES_Key));
+
+            String DESKey_send=En_Decryption.encryption(DES_Key);
+            System.out.println("DESKey_send:    "+DESKey_send);
+
+            String sign_send=En_Decryption.setSignature(DESKey_send);
+            System.out.println("sign_send:    "+sign_send);
+
+            //Hugo 20160405 DES_En_decyption end
+
+
             /* DOM-tree stuff */
             Document document = null;
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -675,6 +700,12 @@ public class CaptureClientGui extends WindowAdapter implements ActionListener, A
             root.setAttribute("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
             root.setAttribute("xmlns:epcis", "urn:epcglobal:epcis:xsd:1");
             root.setAttribute("schemaVersion", "1.0");
+
+            //Hugo 20160412
+            root.setAttribute("DESKey_send",DESKey_send);
+            root.setAttribute("sign_send",sign_send);
+            //Hugo end
+
             element = document.createElement("EPCISBody");
             root.appendChild(element);
             root = element;
@@ -715,19 +746,20 @@ public class CaptureClientGui extends WindowAdapter implements ActionListener, A
                 String tmp_bizLocation=mwBizLocationTextField.getText();
                 Map<String, String> tmp_bizTrancation=fromGui(mwBizTransIDFields, mwBizTransTypeFields);
 
-                En_Decryption.setECCKey();
+//                En_Decryption.setECCKey();
                 System.out.println("readPoint before encrypted----" + tmp_readPoint);
                 long startTime=System.nanoTime();
                // BASE64Decoder decoder2 = new BASE64Decoder();
                // byte[] tmp_readPoint2 = decoder2.decodeBuffer(tmp_readPoint);
-                String encry_readPoint = En_Decryption.encryption(tmp_readPoint.getBytes());
-                long endTime=System.nanoTime();
-                System.out.println("readPoint after encrypted ---" + encry_readPoint+"\n");
+//                String encry_readPoint = En_Decryption.encryption(tmp_readPoint.getBytes());
+                //Hugo0160412
+                byte[]text_byte=tmp_readPoint.getBytes();
+                tmp_readPoint= En_Decryption.DES_encrypt(text_byte,DES_Key);
+                System.out.println("text_send:    "+tmp_readPoint);
 
-                System.out.println("readPoint decryption begin---");
-                String decryption_readPoint=En_Decryption.decryption(encry_readPoint);
-                System.out.println("decryption readPoint---"+decryption_readPoint);
-                System.out.println("readPoint decryption end---");
+                long endTime=System.nanoTime();
+                System.out.println("readPoint after encrypted ---" + tmp_readPoint+"\n");
+
                 System.out.println("spend time: "+(endTime-startTime));
                 /**Hugo read point encrypted 20151203 end**/
 
@@ -735,7 +767,7 @@ public class CaptureClientGui extends WindowAdapter implements ActionListener, A
                 CaptureClientHelper.addBizStep(document, root, mwBizStepTextField.getText());
                 CaptureClientHelper.addDisposition(document, root, mwDispositionTextField.getText());
                 //CaptureClientHelper.addReadPoint(document, root, mwReadPointTextField.getText());
-                CaptureClientHelper.addReadPoint(document, root, encry_readPoint);
+                CaptureClientHelper.addReadPoint(document, root, tmp_readPoint);
                 CaptureClientHelper.addBizLocation(document, root, mwBizLocationTextField.getText());
                 CaptureClientHelper.addBizTransactions(document, root, fromGui(mwBizTransIDFields, mwBizTransTypeFields));
 
@@ -759,10 +791,15 @@ public class CaptureClientGui extends WindowAdapter implements ActionListener, A
                 System.out.println("before encrypted ==" + tmp_readPoint);
 
                 long startTime=System.nanoTime();
-                BASE64Decoder decoder2 = new BASE64Decoder();
-                byte[] tmp_readPoint2 = decoder2.decodeBuffer(tmp_readPoint);
+//                BASE64Decoder decoder2 = new BASE64Decoder();
+//                byte[] tmp_readPoint2 = decoder2.decodeBuffer(tmp_readPoint);
+//
+//                tmp_readPoint = En_Decryption.encryption(tmp_readPoint2);
+                //Hugo 20160412
+                byte[]text_byte=tmp_readPoint.getBytes();
+                tmp_readPoint= En_Decryption.DES_encrypt(text_byte,DES_Key);
+                System.out.println("text_send:    "+tmp_readPoint);
 
-                tmp_readPoint = En_Decryption.encryption(tmp_readPoint2);
                 long endTime=System.nanoTime();
                 System.out.println("after encrypted ==" + tmp_readPoint);
                 System.out.println("spend time: "+(endTime-startTime));
@@ -770,7 +807,7 @@ public class CaptureClientGui extends WindowAdapter implements ActionListener, A
                 /**Hugo read point encrypted 20151203 end**/
 
 
-                CaptureClientHelper.addReadPoint(document, root, mwReadPointTextField.getText());
+                CaptureClientHelper.addReadPoint(document, root, tmp_readPoint);
                 CaptureClientHelper.addBizLocation(document, root, mwBizLocationTextField.getText());
                 CaptureClientHelper.addBizTransactions(document, root, fromGui(mwBizTransIDFields, mwBizTransTypeFields));
             } else if (EpcisEventType.fromGuiIndex(index) == EpcisEventType.QuantityEvent) {
@@ -793,17 +830,22 @@ public class CaptureClientGui extends WindowAdapter implements ActionListener, A
                 System.out.println("before encrypted ==" + tmp_readPoint);
 
                 long startTime=System.nanoTime();
-                BASE64Decoder decoder2 = new BASE64Decoder();
-                byte[] tmp_readPoint2 = decoder2.decodeBuffer(tmp_readPoint);
+//                BASE64Decoder decoder2 = new BASE64Decoder();
+//                byte[] tmp_readPoint2 = decoder2.decodeBuffer(tmp_readPoint);
+//
+//                tmp_readPoint = En_Decryption.encryption(tmp_readPoint2);
+                //Hugo 20160412
+                byte[]text_byte=tmp_readPoint.getBytes();
+                tmp_readPoint= En_Decryption.DES_encrypt(text_byte,DES_Key);
+                System.out.println("text_send:    "+tmp_readPoint);
 
-                tmp_readPoint = En_Decryption.encryption(tmp_readPoint2);
                 long endTime=System.nanoTime();
                 System.out.println("after encrypted ==" + tmp_readPoint);
                 System.out.println("spend time: "+(endTime-startTime));
 
                 /**Hugo read point encrypted 20151203 end**/
 
-                CaptureClientHelper.addReadPoint(document, root, mwReadPointTextField.getText());
+                CaptureClientHelper.addReadPoint(document, root, tmp_readPoint);
                 CaptureClientHelper.addBizLocation(document, root, mwBizLocationTextField.getText());
                 CaptureClientHelper.addBizTransactions(document, root, fromGui(mwBizTransIDFields, mwBizTransTypeFields));
             } else if (EpcisEventType.fromGuiIndex(index) == EpcisEventType.TransactionEvent) {
@@ -827,16 +869,21 @@ public class CaptureClientGui extends WindowAdapter implements ActionListener, A
                 System.out.println("before encrypted ==" + tmp_readPoint);
 
                 long startTime=System.nanoTime();
-                BASE64Decoder decoder2 = new BASE64Decoder();
-                byte[] tmp_readPoint2 = decoder2.decodeBuffer(tmp_readPoint);
+//                BASE64Decoder decoder2 = new BASE64Decoder();
+//                byte[] tmp_readPoint2 = decoder2.decodeBuffer(tmp_readPoint);
+//
+//                tmp_readPoint = En_Decryption.encryption(tmp_readPoint2);
+                //Hugo 20160412
+                byte[]text_byte=tmp_readPoint.getBytes();
+                tmp_readPoint= En_Decryption.DES_encrypt(text_byte,DES_Key);
+                System.out.println("text_send:    "+tmp_readPoint);
 
-                tmp_readPoint = En_Decryption.encryption(tmp_readPoint2);
                 long endTime=System.nanoTime();
                 System.out.println("after encrypted ==" + tmp_readPoint);
                 System.out.println("spend time: "+(endTime-startTime));
 
                 /**Hugo read point encrypted 20151203 end**/
-                CaptureClientHelper.addReadPoint(document, root, mwReadPointTextField.getText());
+                CaptureClientHelper.addReadPoint(document, root, tmp_readPoint);
                 CaptureClientHelper.addBizLocation(document, root, mwBizLocationTextField.getText());
             }
 

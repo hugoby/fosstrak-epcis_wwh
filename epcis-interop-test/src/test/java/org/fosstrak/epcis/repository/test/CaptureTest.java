@@ -20,11 +20,12 @@
 
 package org.fosstrak.epcis.repository.test;
 
-import java.io.FileInputStream;
-
 import org.dbunit.dataset.ITable;
 import org.dbunit.operation.DatabaseOperation;
+import org.fosstrak.epcis.captureclient.CaptureClient;
 import org.fosstrak.epcis.utils.FosstrakDatabaseHelper;
+
+import java.io.FileInputStream;
 
 /**
  * Tests the capture operation by sending a set of EPCIS capture requests to the

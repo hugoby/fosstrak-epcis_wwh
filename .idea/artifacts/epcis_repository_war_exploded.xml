@@ -62,6 +62,7 @@
           <element id="library" level="project" name="Maven: org.apache.geronimo.specs:geronimo-activation_1.1_spec:1.0.2" />
           <element id="library" level="project" name="Maven: org.codehaus.woodstox:wstx-asl:3.2.9" />
           <element id="library" level="project" name="Maven: com.sun.xml.bind:jaxb-xjc:2.1.13" />
+          <element id="library" level="project" name="bcprov-jdk15on-153" />
         </element>
       </element>
       <element id="directory" name="META-INF">

@@ -20,27 +20,26 @@
 
 package org.fosstrak.epcis.repository.capture;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.StringWriter;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.security.Principal;
-import java.sql.SQLException;
-import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.fosstrak.epcis.ency.En_Decryption;
+import org.fosstrak.epcis.repository.EpcisConstants;
+import org.fosstrak.epcis.repository.InternalBusinessException;
+import org.fosstrak.epcis.repository.InvalidFormatException;
+import org.fosstrak.epcis.repository.model.*;
+import org.fosstrak.epcis.utils.TimeParser;
+import org.hibernate.*;
+import org.hibernate.criterion.Restrictions;
+import org.w3c.dom.*;
+import org.xml.sax.ErrorHandler;
+import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
+import sun.misc.BASE64Decoder;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -55,53 +54,20 @@ import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
 import javax.xml.validation.Validator;
+import java.io.*;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.security.*;
+import java.security.spec.InvalidKeySpecException;
+import java.sql.SQLException;
+import java.text.ParseException;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.lang.InstantiationException;
 
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.fosstrak.epcis.repository.EpcisConstants;
-import org.fosstrak.epcis.repository.InternalBusinessException;
-import org.fosstrak.epcis.repository.InvalidFormatException;
-import org.fosstrak.epcis.repository.model.Action;
-import org.fosstrak.epcis.repository.model.AggregationEvent;
-import org.fosstrak.epcis.repository.model.BaseEvent;
-import org.fosstrak.epcis.repository.model.BusinessLocationAttrId;
-import org.fosstrak.epcis.repository.model.BusinessLocationId;
-import org.fosstrak.epcis.repository.model.BusinessStepAttrId;
-import org.fosstrak.epcis.repository.model.BusinessStepId;
-import org.fosstrak.epcis.repository.model.BusinessTransaction;
-import org.fosstrak.epcis.repository.model.BusinessTransactionAttrId;
-import org.fosstrak.epcis.repository.model.BusinessTransactionId;
-import org.fosstrak.epcis.repository.model.BusinessTransactionTypeAttrId;
-import org.fosstrak.epcis.repository.model.BusinessTransactionTypeId;
-import org.fosstrak.epcis.repository.model.DispositionAttrId;
-import org.fosstrak.epcis.repository.model.DispositionId;
-import org.fosstrak.epcis.repository.model.EPCClass;
-import org.fosstrak.epcis.repository.model.EPCClassAttrId;
-import org.fosstrak.epcis.repository.model.EventFieldExtension;
-import org.fosstrak.epcis.repository.model.ObjectEvent;
-import org.fosstrak.epcis.repository.model.QuantityEvent;
-import org.fosstrak.epcis.repository.model.ReadPointAttrId;
-import org.fosstrak.epcis.repository.model.ReadPointId;
-import org.fosstrak.epcis.repository.model.TransactionEvent;
-import org.fosstrak.epcis.repository.model.VocabularyAttrCiD;
-import org.fosstrak.epcis.repository.model.VocabularyAttributeElement;
-import org.fosstrak.epcis.repository.model.VocabularyElement;
-import org.fosstrak.epcis.utils.TimeParser;
-import org.hibernate.Criteria;
-import org.hibernate.ObjectNotFoundException;
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import org.hibernate.Transaction;
-import org.hibernate.criterion.Restrictions;
-import org.w3c.dom.DOMException;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.ErrorHandler;
-import org.xml.sax.SAXException;
-import org.xml.sax.SAXParseException;
+import org.bouncycastle.util.encoders.Base64;
 
 /**
  * CaptureOperationsModule implements the core capture operations. Converts XML
@@ -452,30 +418,44 @@ public class CaptureOperationsModule {
     /**
      * Processes the given document and stores the events to db.
      */
-    private void processEvents(Session session, Document document) throws DOMException, SAXException,
-            InvalidFormatException {
-        NodeList eventList = document.getElementsByTagName("EventList");
-        NodeList events = eventList.item(0).getChildNodes();
+    private void processEvents(Session session, Document document) throws Exception {
+        //Hugo 20160408 ?????DES_Key???sign_send
+        Element root=document.getDocumentElement();
+        String DESKey_get=root.getAttribute("DESKey_send");
+        LOG.fatal("DES_Key"+DESKey_get);
+        String sign_get=root.getAttribute("sign_send");
+        String user="hugo";
+        String admin="admin";
+        En_Decryption.keyStore_List(admin, user, En_Decryption.En_DecryMethod.PUB_SIGNATRUE);
+        byte[] DES_Key2=En_Decryption.decryption(DESKey_get);
 
-        // walk through all supplied events
-        int eventCount = 0;
-        for (int i = 0; i < events.getLength(); i++) {
-            Node eventNode = events.item(i);
-            String nodeName = eventNode.getNodeName();
+        if(En_Decryption.isRightSignature(DESKey_get,sign_get)){
+            LOG.fatal("########Successfully verified########");
+            NodeList eventList = document.getElementsByTagName("EventList");
+            NodeList events = eventList.item(0).getChildNodes();
 
-            if (nodeName.equals(EpcisConstants.OBJECT_EVENT) || nodeName.equals(EpcisConstants.AGGREGATION_EVENT)
-                    || nodeName.equals(EpcisConstants.QUANTITY_EVENT)
-                    || nodeName.equals(EpcisConstants.TRANSACTION_EVENT)) {
-                LOG.debug("processing event " + i + ": '" + nodeName + "'.");
-                handleEvent(session, eventNode, nodeName);
-                eventCount++;
-                if (eventCount % 50 == 0) {
-                    session.flush();
-                    session.clear();
+            // walk through all supplied events
+            int eventCount = 0;
+            for (int i = 0; i < events.getLength(); i++) {
+                Node eventNode = events.item(i);
+                String nodeName = eventNode.getNodeName();
+
+                if (nodeName.equals(EpcisConstants.OBJECT_EVENT) || nodeName.equals(EpcisConstants.AGGREGATION_EVENT)
+                        || nodeName.equals(EpcisConstants.QUANTITY_EVENT)
+                        || nodeName.equals(EpcisConstants.TRANSACTION_EVENT)) {
+                    LOG.debug("processing event " + i + ": '" + nodeName + "'.");
+                    handleEvent(session, eventNode, nodeName, DES_Key2);
+                    eventCount++;
+                    if (eventCount % 50 == 0) {
+                        session.flush();
+                        session.clear();
+                    }
+                } else if (!nodeName.equals("#text") && !nodeName.equals("#comment")) {
+                    throw new SAXException("Encountered unknown event '" + nodeName + "'.");
                 }
-            } else if (!nodeName.equals("#text") && !nodeName.equals("#comment")) {
-                throw new SAXException("Encountered unknown event '" + nodeName + "'.");
             }
+        }else{
+            throw new Exception("fail to identify.");
         }
     }
 
@@ -492,8 +472,8 @@ public class CaptureOperationsModule {
      * @throws Exception
      * @throws DOMException
      */
-    private void handleEvent(Session session, final Node eventNode, final String eventType) throws DOMException,
-            SAXException, InvalidFormatException {
+    private void handleEvent(Session session, final Node eventNode, final String eventType, byte[] DES_Key2) throws DOMException,
+            SAXException, InvalidFormatException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidKeySpecException, ParserConfigurationException, NoSuchPaddingException, BadPaddingException, NoSuchProviderException, IllegalBlockSizeException {
         if (eventNode == null) {
             // nothing to do
             return;
@@ -564,6 +544,11 @@ public class CaptureOperationsModule {
                 Element attrElem = (Element) curEventNode;
                 Node id = attrElem.getElementsByTagName("id").item(0);
                 readPointUri = id.getTextContent();
+
+                //Hugo 20160412
+                BASE64Decoder decoder=new BASE64Decoder();
+                byte[] src=decoder.decodeBuffer(readPointUri);
+                readPointUri=En_Decryption.DES_decrypt(src,DES_Key2);
             } else if (nodeName.equals("bizLocation")) {
                 Element attrElem = (Element) curEventNode;
                 Node id = attrElem.getElementsByTagName("id").item(0);

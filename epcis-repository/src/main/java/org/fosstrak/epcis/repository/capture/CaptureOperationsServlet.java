@@ -42,7 +42,7 @@ import org.hibernate.HibernateException;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 import org.xml.sax.SAXException;
-
+import org.bouncycastle.util.encoders.Base64;
 /**
  * This CaptureOperationsServlet accepts and analyzes HTTP POST requests and
  * delegates them to the appropriate handler methods in the

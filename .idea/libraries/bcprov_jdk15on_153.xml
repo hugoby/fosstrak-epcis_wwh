@@ -1,7 +1,7 @@
 <component name="libraryTable">
   <library name="bcprov-jdk15on-153">
     <CLASSES>
-      <root url="jar://E:/fosstrak_fc_maven_jar/ency/bcprov-jdk15on-153.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../BouncyCastle/bcprov-jdk15on-153.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />

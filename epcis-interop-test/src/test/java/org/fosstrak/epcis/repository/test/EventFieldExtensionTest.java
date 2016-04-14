@@ -20,12 +20,12 @@
 
 package org.fosstrak.epcis.repository.test;
 
+import junit.framework.TestCase;
+import org.fosstrak.epcis.captureclient.CaptureClient;
+import org.fosstrak.epcis.queryclient.QueryControlClient;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-
-import junit.framework.TestCase;
-
-import org.fosstrak.epcis.queryclient.QueryControlClient;
 
 /**
  * This Test first inserts two events each containing two fieldname extensions

@@ -87,5 +87,6 @@
     <orderEntry type="library" name="Maven: org.codehaus.woodstox:wstx-asl:3.2.9" level="project" />
     <orderEntry type="library" name="Maven: com.sun.xml.bind:jaxb-xjc:2.1.13" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: junit:junit:3.8.2" level="project" />
+    <orderEntry type="library" name="bcprov-jdk15on-153" level="project" />
   </component>
 </module>

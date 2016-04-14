@@ -3,6 +3,11 @@
     <output-path>$PROJECT_DIR$/epcis-repository/target</output-path>
     <root id="archive" name="epcis-repository-0.5.1-SNAPSHOT.war">
       <element id="artifact" artifact-name="epcis-repository:war exploded" />
+      <element id="directory" name="WEB-INF">
+        <element id="directory" name="lib">
+          <element id="library" level="project" name="bcprov-jdk15on-153" />
+        </element>
+      </element>
     </root>
   </artifact>
 </component>
